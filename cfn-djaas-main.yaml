@@ -1,0 +1,51 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Dad jokes as a service
+Parameters:
+  PHashKeyElementName:
+    Description: HashType PrimaryKey Name
+    Type: String
+    AllowedPattern: "[a-zA-Z0-9]*"
+    Default: "Joke_Text"
+    MinLength: "1"
+    MaxLength: "2048"
+    ConstraintDescription: must contain only alphanumeric characters
+  PHashKeyElementType:
+    Description: HashType PrimaryKey Type
+    Type: String
+    Default: S
+    AllowedPattern: "[S|N]"
+    MinLength: "1"
+    MaxLength: "1"
+    ConstraintDescription: must be either S or N
+  PReadCapacityUnits:
+    Description: Provisioned read throughput
+    Type: Number
+    Default: "1"
+    MinValue: "1"
+    MaxValue: "5"
+    ConstraintDescription: must be between 1 and 5
+  PWriteCapacityUnits:
+    Description: Provisioned write throughput
+    Type: Number
+    Default: "1"
+    MinValue: "1"
+    MaxValue: "5"
+    ConstraintDescription: must be between 1 and 5
+Resources:
+  RDynamoDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: Dad_Jokes
+      AttributeDefinitions:
+        - AttributeName: !Ref PHashKeyElementName
+          AttributeType: !Ref PHashKeyElementType
+      KeySchema:
+        - AttributeName: !Ref PHashKeyElementName
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: !Ref PReadCapacityUnits
+        WriteCapacityUnits: !Ref PWriteCapacityUnits
+Outputs:
+  ODynamoDBTable:
+    Value: !Ref RDynamoDBTable
+    Description: Newly created Dad Jokes DynamoDB table.
