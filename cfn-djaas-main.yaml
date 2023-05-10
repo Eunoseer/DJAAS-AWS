@@ -5,7 +5,7 @@ Parameters:
     Description: HashType PrimaryKey Name
     Type: String
     AllowedPattern: "[a-zA-Z0-9]*"
-    Default: "Joke_Text"
+    Default: "Id"
     MinLength: "1"
     MaxLength: "2048"
     ConstraintDescription: must contain only alphanumeric characters
@@ -17,6 +17,15 @@ Parameters:
     MinLength: "1"
     MaxLength: "1"
     ConstraintDescription: must be either S or N
+  PJokeElementName:
+    Description: Name
+    Type: String
+    Default: "JokeText"
+    MaxLength: "2048"
+  PJokeElementType:
+    Description: Type
+    Type: String
+    Default: S
   PReadCapacityUnits:
     Description: Provisioned read throughput
     Type: Number
@@ -39,9 +48,13 @@ Resources:
       AttributeDefinitions:
         - AttributeName: !Ref PHashKeyElementName
           AttributeType: !Ref PHashKeyElementType
+        - AttributeName: !Ref PJokeElementName
+          AttributeType: !Ref PJokeElementType
       KeySchema:
         - AttributeName: !Ref PHashKeyElementName
           KeyType: HASH
+        - AttributeName: !Ref PJokeElementName
+          KeyType: RANGE
       ProvisionedThroughput:
         ReadCapacityUnits: !Ref PReadCapacityUnits
         WriteCapacityUnits: !Ref PWriteCapacityUnits
