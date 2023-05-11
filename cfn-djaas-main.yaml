@@ -1,7 +1,8 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: Dad jokes as a service
 Parameters:
-  PHashKeyElementName:
+  # DynamoDB Table
+  pHashKeyElementName:
     Description: HashType PrimaryKey Name
     Type: String
     AllowedPattern: "[a-zA-Z0-9]*"
@@ -9,7 +10,7 @@ Parameters:
     MinLength: "1"
     MaxLength: "2048"
     ConstraintDescription: must contain only alphanumeric characters
-  PHashKeyElementType:
+  pHashKeyElementType:
     Description: HashType PrimaryKey Type
     Type: String
     Default: S
@@ -17,23 +18,23 @@ Parameters:
     MinLength: "1"
     MaxLength: "1"
     ConstraintDescription: must be either S or N
-  PJokeElementName:
+  pJokeElementName:
     Description: Name
     Type: String
     Default: "JokeText"
     MaxLength: "2048"
-  PJokeElementType:
+  pJokeElementType:
     Description: Type
     Type: String
     Default: S
-  PReadCapacityUnits:
+  pReadCapacityUnits:
     Description: Provisioned read throughput
     Type: Number
     Default: "1"
     MinValue: "1"
     MaxValue: "5"
     ConstraintDescription: must be between 1 and 5
-  PWriteCapacityUnits:
+  pWriteCapacityUnits:
     Description: Provisioned write throughput
     Type: Number
     Default: "1"
@@ -41,24 +42,38 @@ Parameters:
     MaxValue: "5"
     ConstraintDescription: must be between 1 and 5
 Resources:
-  RDynamoDBTable:
+  rDynamoDBTable:
     Type: AWS::DynamoDB::Table
     Properties:
       TableName: Dad_Jokes
       AttributeDefinitions:
-        - AttributeName: !Ref PHashKeyElementName
-          AttributeType: !Ref PHashKeyElementType
-        - AttributeName: !Ref PJokeElementName
-          AttributeType: !Ref PJokeElementType
+        - AttributeName: !Ref pHashKeyElementName
+          AttributeType: !Ref pHashKeyElementType
+        - AttributeName: !Ref pJokeElementName
+          AttributeType: !Ref pJokeElementType
       KeySchema:
-        - AttributeName: !Ref PHashKeyElementName
+        - AttributeName: !Ref pHashKeyElementName
           KeyType: HASH
-        - AttributeName: !Ref PJokeElementName
+        - AttributeName: !Ref pJokeElementName
           KeyType: RANGE
       ProvisionedThroughput:
-        ReadCapacityUnits: !Ref PReadCapacityUnits
-        WriteCapacityUnits: !Ref PWriteCapacityUnits
+        ReadCapacityUnits: !Ref pReadCapacityUnits
+        WriteCapacityUnits: !Ref pWriteCapacityUnits
+  rApiGatewayPolicy:
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: ApiGatewayLambdaCallPolicy
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              "lambda:InvokeFunction"
+              "lambda:InvokeAsync"
+              "lambda:GetFunction"
+        Resource:
+          - !GetAtt rLambdaGetRandom.Arn
 Outputs:
   ODynamoDBTable:
-    Value: !Ref RDynamoDBTable
+    Value: !Ref rDynamoDBTable
     Description: Newly created Dad Jokes DynamoDB table.

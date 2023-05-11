@@ -1,0 +1,15 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ApiGatewayLambdaCallPolicy",
+      "Effect": "Allow",
+      "Action": [
+        "lambda:InvokeFunction",
+        "lambda:InvokeAsync",
+        "lambda:GetFunction"
+      ],
+      "Resource": "arn:aws:lambda:ap-southeast-2:723104728616:function:random"
+    }
+  ]
+}

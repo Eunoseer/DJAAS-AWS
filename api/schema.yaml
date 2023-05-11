@@ -1,0 +1,23 @@
+openapi: 3.0.1
+info:
+  title: DadJokes
+  version: "2023-05-11T02:16:16Z"
+paths:
+  /random:
+    get:
+      responses:
+        '200':
+          description: '200 response'
+      x-amazon-apigateway-integration:
+        credentials: 'arn:aws:iam::723104728616:role/apigAwsProxyRole' #TODO: Create role and related profile in cloudformation template
+        responses:
+          default:
+            statusCode: 200
+        uri: 'arn:aws:apigateway:ap-southeast-2:lambda:path/2015-03-31/functions/arn:aws:lambda:ap-southeast-2:723104728616:function:random/invocations'
+        httpMethod: POST
+        type: AWS
+servers:
+- url: "https://h41scp8upl.execute-api.ap-southeast-2.amazonaws.com/{basePath}"
+  variables:
+    basePath:
+      default: "prod"
