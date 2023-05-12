@@ -9,11 +9,11 @@ paths:
         '200':
           description: '200 response'
       x-amazon-apigateway-integration:
-        credentials: 'arn:aws:iam::723104728616:role/apigAwsProxyRole' #TODO: Create role and related profile in cloudformation template
+        credentials: 'arn:aws:iam::723104728616:role/ApiGatewayLambdaCallRole'
         responses:
           default:
             statusCode: 200
-        uri: 'arn:aws:apigateway:ap-southeast-2:lambda:path/2015-03-31/functions/arn:aws:lambda:ap-southeast-2:723104728616:function:random/invocations'
+        uri: 'arn:aws:apigateway:ap-southeast-2:lambda:path/2015-03-31/functions/arn:aws:lambda:ap-southeast-2:723104728616:function:DadJokesGetRandom/invocations'
         httpMethod: POST
         type: AWS
 servers:

@@ -1,7 +1,7 @@
-AWSTemplateFormatVersion: 2010-09-09
+AWSTemplateFormatVersion: '2010-09-09'
 Description: Dad jokes as a service
 Parameters:
-  # DynamoDB Table
+  # DynamoDB
   pHashKeyElementName:
     Description: HashType PrimaryKey Name
     Type: String
@@ -42,6 +42,7 @@ Parameters:
     MaxValue: "5"
     ConstraintDescription: must be between 1 and 5
 Resources:
+  # DynamoDB
   rDynamoDBTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -59,20 +60,122 @@ Resources:
       ProvisionedThroughput:
         ReadCapacityUnits: !Ref pReadCapacityUnits
         WriteCapacityUnits: !Ref pWriteCapacityUnits
-  rApiGatewayPolicy:
-    Type: 'AWS::IAM::Policy'
+
+  #Lambda
+  rLambdaGetRandom:
+    Type: 'AWS::Lambda::Function'
+    DependsOn: rLambdaExecutionRole
     Properties:
-      PolicyName: ApiGatewayLambdaCallPolicy
+      FunctionName: DadJokesGetRandom
+      Architectures:
+        - 'arm64'
+      Description: 'Retrieves a random dad joke from DynamoDB. Returns a JSON object.'
+      Role: !GetAtt rLambdaExecutionRole.Arn
+      Code:
+        ZipFile: './lambda/random.js'
+  rLambdaExecutionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: LambdaExecutionRole
+      Description: 'The role used by Lambda to log to cloudwatch.'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Service:
+                - 'apigateway.amazonaws.com'
+            Action:
+              - 'sts:AssumeRole'
+  rLambdaExecutionPolicy:
+    Type: 'AWS::IAM::Policy'
+    DependsOn: rLambdaExecutionRole
+    Properties:
+      PolicyName: LambdaExecutionPolicy
+      Roles:
+        - !Ref rLambdaExecutionRole
       PolicyDocument:
-        Version: "2012-10-17"
+        Version: '2012-10-17'
         Statement:
           - Effect: Allow
             Action:
-              "lambda:InvokeFunction"
-              "lambda:InvokeAsync"
-              "lambda:GetFunction"
+              - 'Logs:CreateLogGroup'
+            Resource:
+              - 'arn:aws:logs:ap-southeast-2:723104728616:*'
+          - Effect: Allow
+            Action:
+              - 'logs:CreateLogStream'
+              - 'logs:PutLogEvents'
+            Resource:
+              - 'arn:aws:logs:ap-southeast-2:723104728616:log-group:/aws/lambda/DadJokesGetRandom:*'
+
+
+  #API Gateway
+  rApiGatewayRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: ApiGatewayLambdaCallRole
+      Description: 'The role used by API Gateway to handle calls to Lambda functions'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Service:
+                - 'apigateway.amazonaws.com'
+            Action:
+              - 'sts:AssumeRole'
+  rApiGatewayPolicy:
+    Type: 'AWS::IAM::Policy'
+    DependsOn:
+      - rLambdaGetRandom
+      - rApiGatewayRole
+    Properties:
+      PolicyName: ApiGatewayLambdaCallPolicy
+      Roles:
+        - !Ref rApiGatewayRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'lambda:InvokeFunction'
+              - 'lambda:InvokeAsync'
+              - 'lambda:GetFunction'
         Resource:
           - !GetAtt rLambdaGetRandom.Arn
+  rApiGateway:
+    Type: 'AWS::ApiGateway::RestApi'
+    DependsOn:
+      - rApiGatewayRole
+    Properties:
+      Name: DadJokesRestAPI
+      Description: 'The api gateway that handles calls for the Dad Jokes REST API.'
+      Body:
+        OpenAPI specification: |
+          openapi: 3.0.1
+            info:
+            title: DadJokes
+            version: "2023-05-11T02:16:16Z"
+          paths:
+            /random:
+              get:
+                responses:
+                  '200':
+                    description: '200 response'
+                x-amazon-apigateway-integration:
+                  credentials: 'arn:aws:iam::723104728616:role/ApiGatewayLambdaCallRole'
+                  responses:
+                    default:
+                      statusCode: 200
+                  uri: 'arn:aws:apigateway:ap-southeast-2:lambda:path/2015-03-31/functions/arn:aws:lambda:ap-southeast-2:723104728616:function:DadJokesGetRandom/invocations'
+                  httpMethod: POST
+                  type: AWS
+          servers:
+          - url: "https://h41scp8upl.execute-api.ap-southeast-2.amazonaws.com/{basePath}"
+            variables:
+              basePath:
+                default: "prod"
 Outputs:
   ODynamoDBTable:
     Value: !Ref rDynamoDBTable
