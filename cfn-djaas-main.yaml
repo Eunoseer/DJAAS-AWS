@@ -109,7 +109,6 @@ Resources:
             Resource:
               - 'arn:aws:logs:ap-southeast-2:723104728616:log-group:/aws/lambda/DadJokesGetRandom:*'
 
-
   #API Gateway
   rApiGatewayRole:
     Type: 'AWS::IAM::Role'
