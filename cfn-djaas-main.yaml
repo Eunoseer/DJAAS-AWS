@@ -47,26 +47,18 @@ Resources:
     Properties:
       TableName: Dad_Jokes
       AttributeDefinitions:
-      - AttributeName:
-          Ref: pHashKeyElementName
-        AttributeType:
-          Ref: pHashKeyElementType
-      - AttributeName:
-          Ref: pJokeElementName
-        AttributeType:
-          Ref: pJokeElementType
+      - AttributeName: !Ref pHashKeyElementName
+        AttributeType: !Ref pHashKeyElementType
+      - AttributeName: !Ref pJokeElementName
+        AttributeType: !Ref pJokeElementType
       KeySchema:
-      - AttributeName:
-          Ref: pHashKeyElementName
+      - AttributeName: !Ref pHashKeyElementName
         KeyType: HASH
-      - AttributeName:
-          Ref: pJokeElementName
+      - AttributeName: !Ref pJokeElementName
         KeyType: RANGE
       ProvisionedThroughput:
-        ReadCapacityUnits:
-          Ref: pReadCapacityUnits
-        WriteCapacityUnits:
-          Ref: pWriteCapacityUnits
+        ReadCapacityUnits: !Ref pReadCapacityUnits
+        WriteCapacityUnits: !Ref pWriteCapacityUnits
 
   # Lambda
   rLambdaGetRandom:
@@ -78,13 +70,11 @@ Resources:
       - arm64
       Description: Retrieves a random dad joke from DynamoDB. Returns a JSON object.
       Role:
-        Fn::GetAtt:
-        - rLambdaExecutionRole
-        - Arn
+        !GetAtt rLambdaExecutionRole.Arn
       Runtime: nodejs18.x
       Handler: index.handler
       Code:
-        ZipFile: ./lambda/random.js
+        ZipFile: /lambda/random.js
   rLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -104,7 +94,7 @@ Resources:
     Properties:
       PolicyName: LambdaExecutionPolicy
       Roles:
-      - Ref: rLambdaExecutionRole
+      - !Ref rLambdaExecutionRole
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -140,7 +130,7 @@ Resources:
     Properties:
       PolicyName: ApiGatewayLambdaCallPolicy
       Roles:
-      - Ref: rApiGatewayRole
+      - !Ref rApiGatewayRole
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -185,15 +175,13 @@ Resources:
   rApiGatewayStage:
     Type: AWS::ApiGatewayV2::Stage
     Properties:
-      ApiId:
-        Ref: rApiGateway
+      ApiId: !Ref rApiGateway
       StageName: dev
   rApiGatewayStageDeploy:
     Type: AWS::ApiGatewayV2::Deployment
     DependsOn: rApiGatewayStage
     Properties:
-      ApiId:
-        Ref: rApiGateway
+      ApiId: !Ref rApiGateway
       Description: The default deployment stage for DadJokesHTTPApi.
       StageName: dev
 Outputs:
