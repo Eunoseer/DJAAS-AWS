@@ -6,5 +6,5 @@ Dad jokes as a service - AWS
 
 ### Deploy stack
 ~~~
-aws cloudformation deploy --template-file .\cfn-djaas-main.yaml --stack-name djaas-main --capabilities CAPABILITY_NAMED_IAM
+aws cloudformation deploy --template-file .\cfn-djaas-main.yaml --stack-name djaas-main --parameter-overrides file://.\override-parameters.json --capabilities CAPABILITY_NAMED_IAM
 ~~~

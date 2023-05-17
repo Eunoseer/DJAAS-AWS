@@ -1,60 +1,123 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Dad jokes as a service
 Parameters:
-  pHashKeyElementName:
-    Description: HashType PrimaryKey Name
+  pAccountNumber:
     Type: String
-    AllowedPattern: '[a-zA-Z0-9]*'
-    Default: Id
+    MinLength: '12'
+    MaxLength: '12'
+    AllowedPattern: '[0-9]*'
+    Description: 'The account ID to deploy the cloudformation stack to.'
+    Default: '123456789000'
+
+  # DynamoDB
+  pDynamoDBTableName:
+    Type: String
+    MinLength: '3'
+    MaxLength: '255'
+    AllowedPattern: '[a-zA-Z0-9_.-]+'
+    Description: 'The name of the Dad Jokes DynamoDB Table'
+    Default: Dad_Jokes
+  pDynamoDBPKName:
+    Type: String
     MinLength: '1'
     MaxLength: '2048'
+    AllowedPattern: '[a-zA-Z0-9]*'
+    Description: HashType PrimaryKey Name
+    Default: Id
     ConstraintDescription: must contain only alphanumeric characters
-  pHashKeyElementType:
-    Description: HashType PrimaryKey Type
+  pDynamoDBPKType:
     Type: String
-    Default: S
-    AllowedPattern: '[S|N]'
     MinLength: '1'
     MaxLength: '1'
+    AllowedPattern: '[S|N]'
+    Description: HashType PrimaryKey Type
+    Default: S
     ConstraintDescription: must be either S or N
-  pJokeElementName:
-    Description: Name
+  pDynamoDBJokeName:
     Type: String
-    Default: JokeText
     MaxLength: '2048'
-  pJokeElementType:
-    Description: Type
+    Description: Name
+    Default: JokeText
+  pDynamoDBJokeType:
     Type: String
+    Description: Type
     Default: S
   pReadCapacityUnits:
+    Type: Number
+    MinValue: '1'
+    MaxValue: '100'
     Description: Provisioned read throughput
-    Type: Number
     Default: '1'
-    MinValue: '1'
-    MaxValue: '5'
-    ConstraintDescription: must be between 1 and 5
+    ConstraintDescription: must be between 1 and 100
   pWriteCapacityUnits:
-    Description: Provisioned write throughput
     Type: Number
-    Default: '1'
     MinValue: '1'
-    MaxValue: '5'
-    ConstraintDescription: must be between 1 and 5
+    MaxValue: '100'
+    Description: Provisioned write throughput
+    Default: '1'
+    ConstraintDescription: must be between 1 and 100
+
+  # Lambda
+  pLambdaExecutionRoleName:
+    Type: String
+    MinLength: '1'
+    MaxLength: '64'
+    AllowedPattern: '[\w+=,.@-]+'
+    Description: The name of the lambda execution role.
+    Default: Lambda-Role-DadJokes
+  pLambdaExecutionPolicyName:
+    Type: String
+    MinLength: '1'
+    MaxLength: '64'
+    AllowedPattern: '[\w+=,.@-]+'
+    Description: The name of the lambda execution policy.
+    Default: Lambda-Policy-DadJokes
+  pLambdaFunctionNameRandom:
+    Type: String
+    MinLength: '1'
+    MaxLength: '64'
+    AllowedPattern: '[a-zA-Z][a-zA-Z0-9_-]*'
+    Description: The name of the lambda function to return random results.
+    Default: Lambda-DynamoDB-DadJokes-GetRandom
+
+  # Api Gateway
+  pApiGatewayRoleName:
+    Type: String
+    MinLength: '1'
+    MaxLength: '64'
+    AllowedPattern: '[\w+=,.@-]+'
+    Description: The name of the API Gateway lambda execution role.
+    Default: ApiGatewayLambdaCallerRole
+  pApiGatewayPolicyName:
+    Type: String
+    MinLength: '1'
+    MaxLength: '64'
+    AllowedPattern: '[\w+=,.@-]+'
+    Description: The name of the API Gateway lambda execution policy.
+    Default: ApiGatewayLambdaCallerPolicy
+  pApiGatewayName:
+    Type: String
+    MinLength: '1'
+    MaxLength: '64'
+    AllowedPattern: '[a-zA-Z][a-zA-Z0-9_-]*'
+    Description: The name of the lambda function to return random results.
+    Default: DadJokes-HttpApi
+
 Resources:
   # DynamoDB
   rDynamoDBTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: Dad_Jokes
+      TableName: !Ref pDynamoDBTableName
       AttributeDefinitions:
-      - AttributeName: !Ref pHashKeyElementName
-        AttributeType: !Ref pHashKeyElementType
-      - AttributeName: !Ref pJokeElementName
-        AttributeType: !Ref pJokeElementType
+      - AttributeName: !Ref pDynamoDBPKName
+        AttributeType: !Ref pDynamoDBPKType
+      - AttributeName: !Ref pDynamoDBJokeName
+        AttributeType: !Ref pDynamoDBJokeType
       KeySchema:
-      - AttributeName: !Ref pHashKeyElementName
+      - AttributeName: !Ref pDynamoDBPKName
         KeyType: HASH
-      - AttributeName: !Ref pJokeElementName
+      - AttributeName: !Ref pDynamoDBJokeName
         KeyType: RANGE
       ProvisionedThroughput:
         ReadCapacityUnits: !Ref pReadCapacityUnits
@@ -65,7 +128,7 @@ Resources:
     Type: AWS::Lambda::Function
     DependsOn: rLambdaExecutionRole
     Properties:
-      FunctionName: DadJokesGetRandom
+      FunctionName: !Ref pLambdaFunctionNameRandom
       Architectures:
       - arm64
       Description: Retrieves a random dad joke from DynamoDB. Returns a JSON object.
@@ -78,7 +141,7 @@ Resources:
   rLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: LambdaExecutionRole
+      RoleName: !Ref pLambdaExecutionRoleName
       Description: The role used by Lambda to log to cloudwatch.
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
@@ -92,7 +155,7 @@ Resources:
   rLambdaExecutionPolicy:
     Type: AWS::IAM::Policy
     Properties:
-      PolicyName: LambdaExecutionPolicy
+      PolicyName: !Ref pLambdaExecutionPolicyName
       Roles:
       - !Ref rLambdaExecutionRole
       PolicyDocument:
@@ -102,19 +165,19 @@ Resources:
           Action:
           - Logs:CreateLogGroup
           Resource:
-          - arn:aws:logs:ap-southeast-2:723104728616:*
+          - !Sub arn:aws:logs:ap-southeast-2:${pAccountNumber}:*
         - Effect: Allow
           Action:
           - logs:CreateLogStream
           - logs:PutLogEvents
           Resource:
-          - arn:aws:logs:ap-southeast-2:723104728616:log-group:/aws/lambda/DadJokesGetRandom:*
+          - !Sub arn:aws:logs:ap-southeast-2:${pAccountNumber}:log-group:/aws/lambda/${pLambdaFunctionNameRandom}:*
 
   # Api Gateway
   rApiGatewayRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: ApiGatewayLambdaCallRole
+      RoleName: !Ref pApiGatewayRoleName
       Description: The role used by API Gateway to handle calls to Lambda functions
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
@@ -128,7 +191,7 @@ Resources:
   rApiGatewayPolicy:
     Type: AWS::IAM::Policy
     Properties:
-      PolicyName: ApiGatewayLambdaCallPolicy
+      PolicyName: !Ref pApiGatewayPolicyName
       Roles:
       - !Ref rApiGatewayRole
       PolicyDocument:
@@ -140,9 +203,7 @@ Resources:
           - lambda:InvokeAsync
           - lambda:GetFunction
           Resource:
-          - Fn::GetAtt:
-            - rLambdaGetRandom
-            - Arn
+          - !GetAtt rLambdaGetRandom.Arn
   rApiGateway:
     Type: AWS::ApiGatewayV2::Api
     DependsOn:
@@ -151,14 +212,9 @@ Resources:
       Body:
         openapi: 3.0.1
         info:
-          title: DadJokesHTTPApi
+          title: !Ref pApiGatewayName
           version: 2023-05-12 07:50:42UTC
           description: The HTTP api gateway that handles calls for the Dad Jokes API.
-        servers:
-        - url: https://u8wzt58en6.execute-api.ap-southeast-2.amazonaws.com/{basePath}
-          variables:
-            basePath:
-              default: dev
         paths:
           /jokes/random:
             get:
@@ -169,7 +225,7 @@ Resources:
                 payloadFormatVersion: '2.0'
                 type: aws_proxy
                 httpMethod: POST
-                uri: arn:aws:apigateway:ap-southeast-2:lambda:path/2015-03-31/functions/arn:aws:lambda:ap-southeast-2:723104728616:function:DadJokesGetRandom/invocations
+                uri: !Sub arn:aws:apigateway:ap-southeast-2:lambda:path/2015-03-31/functions/arn:aws:lambda:ap-southeast-2:${pAccountNumber}:function:${pLambdaFunctionNameRandom}/invocations
                 connectionType: INTERNET
         x-amazon-apigateway-importexport-version: '1.0'
   rApiGatewayStage:
@@ -185,7 +241,7 @@ Resources:
       Description: The default deployment stage for DadJokesHTTPApi.
       StageName: dev
 Outputs:
-  ODynamoDBTable:
+  oDynamoDBTable:
     Value:
       Ref: rDynamoDBTable
     Description: Newly created Dad Jokes DynamoDB table.
