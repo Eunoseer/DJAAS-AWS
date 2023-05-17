@@ -1,13 +1,12 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Dad jokes as a service
 Parameters:
-  pAccountNumber:
+  pAssetS3BucketName:
     Type: String
-    MinLength: '12'
-    MaxLength: '12'
-    AllowedPattern: '[0-9]*'
-    Description: 'The account ID to deploy the cloudformation stack to.'
-    Default: '123456789000'
+    MinLength: '1'
+    MaxLength: '255'
+    AllowedPattern: '[a-zA-Z0-9_-]+'
+    Default: djaas-main
 
   # DynamoDB
   pDynamoDBTableName:
@@ -124,20 +123,6 @@ Resources:
         WriteCapacityUnits: !Ref pWriteCapacityUnits
 
   # Lambda
-  rLambdaGetRandom:
-    Type: AWS::Lambda::Function
-    DependsOn: rLambdaExecutionRole
-    Properties:
-      FunctionName: !Ref pLambdaFunctionNameRandom
-      Architectures:
-      - arm64
-      Description: Retrieves a random dad joke from DynamoDB. Returns a JSON object.
-      Role:
-        !GetAtt rLambdaExecutionRole.Arn
-      Runtime: nodejs18.x
-      Handler: index.handler
-      Code:
-        ZipFile: /lambda/random.js
   rLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -165,13 +150,25 @@ Resources:
           Action:
           - Logs:CreateLogGroup
           Resource:
-          - !Sub arn:aws:logs:ap-southeast-2:${pAccountNumber}:*
+          - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:*
         - Effect: Allow
           Action:
           - logs:CreateLogStream
           - logs:PutLogEvents
-          Resource:
-          - !Sub arn:aws:logs:ap-southeast-2:${pAccountNumber}:log-group:/aws/lambda/${pLambdaFunctionNameRandom}:*
+          Resource: !Join ['',['arn:', !Ref AWS::Partition, ':logs:', !Ref AWS::Region, ':', !Ref AWS::AccountId, ':log-group:/aws/lambda/', !Ref pLambdaFunctionNameRandom, ':*']]
+  rLambdaGetRandom:
+    Type: AWS::Lambda::Function
+    DependsOn: rLambdaExecutionRole
+    Properties:
+      FunctionName: !Ref pLambdaFunctionNameRandom
+      Architectures:
+      - arm64
+      Description: Retrieves a random dad joke from DynamoDB. Returns a JSON object.
+      Role:
+        !GetAtt rLambdaExecutionRole.Arn
+      Runtime: nodejs18.x
+      Handler: index.handler
+      Code: /development/djaas/aws/lambda/random
 
   # Api Gateway
   rApiGatewayRole:
@@ -208,36 +205,21 @@ Resources:
     Type: AWS::ApiGatewayV2::Api
     DependsOn:
     - rApiGatewayRole
+    - rLambdaGetRandom
     Properties:
-      Body:
-        openapi: 3.0.1
-        info:
-          title: !Ref pApiGatewayName
-          version: 2023-05-12 07:50:42UTC
-          description: The HTTP api gateway that handles calls for the Dad Jokes API.
-        paths:
-          /jokes/random:
-            get:
-              responses:
-                default:
-                  description: Default response for GET /random
-              x-amazon-apigateway-integration:
-                payloadFormatVersion: '2.0'
-                type: aws_proxy
-                httpMethod: POST
-                uri: !Sub arn:aws:apigateway:ap-southeast-2:lambda:path/2015-03-31/functions/arn:aws:lambda:ap-southeast-2:${pAccountNumber}:function:${pLambdaFunctionNameRandom}/invocations
-                connectionType: INTERNET
-        x-amazon-apigateway-importexport-version: '1.0'
+      BodyS3Location:
+        Bucket: !Ref pAssetS3BucketName
+        Key: 'schema.yaml'
   rApiGatewayStage:
     Type: AWS::ApiGatewayV2::Stage
     Properties:
-      ApiId: !Ref rApiGateway
+      ApiId: !GetAtt rApiGateway.ApiId
       StageName: dev
   rApiGatewayStageDeploy:
     Type: AWS::ApiGatewayV2::Deployment
     DependsOn: rApiGatewayStage
     Properties:
-      ApiId: !Ref rApiGateway
+      ApiId: !GetAtt rApiGateway.ApiId
       Description: The default deployment stage for DadJokesHTTPApi.
       StageName: dev
 Outputs:

@@ -1,23 +1,18 @@
 openapi: 3.0.1
 info:
-  title: DadJokes
-  version: "2023-05-11T02:16:16Z"
+  title: DadJokes-HttpApi
+  version: 2023-05-12 07:50:42UTC
+  description: The HTTP api gateway that handles calls for the Dad Jokes API.
 paths:
-  /random:
+  /jokes/random:
     get:
       responses:
-        '200':
-          description: '200 response'
+        default:
+          description: Default response for GET /random
       x-amazon-apigateway-integration:
-        credentials: 'arn:aws:iam::723104728616:role/ApiGatewayLambdaCallRole'
-        responses:
-          default:
-            statusCode: 200
-        uri: 'arn:aws:apigateway:ap-southeast-2:lambda:path/2015-03-31/functions/arn:aws:lambda:ap-southeast-2:723104728616:function:DadJokesGetRandom/invocations'
+        payloadFormatVersion: '2.0'
+        type: aws_proxy
         httpMethod: POST
-        type: AWS
-servers:
-- url: "https://h41scp8upl.execute-api.ap-southeast-2.amazonaws.com/{basePath}"
-  variables:
-    basePath:
-      default: "prod"
+        uri: arn:aws:apigateway:ap-southeast-2:lambda:path/2015-03-31/functions/arn:aws:lambda:ap-southeast-2:723104728616:function:Lambda-DynamoDB-DadJokes-GetRandom/invocations
+        connectionType: INTERNET
+x-amazon-apigateway-importexport-version: '1.0'
