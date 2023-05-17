@@ -1,28 +1,27 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Dad jokes as a service
 Parameters:
-  # DynamoDB
   pHashKeyElementName:
     Description: HashType PrimaryKey Name
     Type: String
-    AllowedPattern: "[a-zA-Z0-9]*"
-    Default: "Id"
-    MinLength: "1"
-    MaxLength: "2048"
+    AllowedPattern: '[a-zA-Z0-9]*'
+    Default: Id
+    MinLength: '1'
+    MaxLength: '2048'
     ConstraintDescription: must contain only alphanumeric characters
   pHashKeyElementType:
     Description: HashType PrimaryKey Type
     Type: String
     Default: S
-    AllowedPattern: "[S|N]"
-    MinLength: "1"
-    MaxLength: "1"
+    AllowedPattern: '[S|N]'
+    MinLength: '1'
+    MaxLength: '1'
     ConstraintDescription: must be either S or N
   pJokeElementName:
     Description: Name
     Type: String
-    Default: "JokeText"
-    MaxLength: "2048"
+    Default: JokeText
+    MaxLength: '2048'
   pJokeElementType:
     Description: Type
     Type: String
@@ -30,16 +29,16 @@ Parameters:
   pReadCapacityUnits:
     Description: Provisioned read throughput
     Type: Number
-    Default: "1"
-    MinValue: "1"
-    MaxValue: "5"
+    Default: '1'
+    MinValue: '1'
+    MaxValue: '5'
     ConstraintDescription: must be between 1 and 5
   pWriteCapacityUnits:
     Description: Provisioned write throughput
     Type: Number
-    Default: "1"
-    MinValue: "1"
-    MaxValue: "5"
+    Default: '1'
+    MinValue: '1'
+    MaxValue: '5'
     ConstraintDescription: must be between 1 and 5
 Resources:
   # DynamoDB
@@ -48,129 +47,157 @@ Resources:
     Properties:
       TableName: Dad_Jokes
       AttributeDefinitions:
-        - AttributeName: !Ref pHashKeyElementName
-          AttributeType: !Ref pHashKeyElementType
-        - AttributeName: !Ref pJokeElementName
-          AttributeType: !Ref pJokeElementType
+      - AttributeName:
+          Ref: pHashKeyElementName
+        AttributeType:
+          Ref: pHashKeyElementType
+      - AttributeName:
+          Ref: pJokeElementName
+        AttributeType:
+          Ref: pJokeElementType
       KeySchema:
-        - AttributeName: !Ref pHashKeyElementName
-          KeyType: HASH
-        - AttributeName: !Ref pJokeElementName
-          KeyType: RANGE
+      - AttributeName:
+          Ref: pHashKeyElementName
+        KeyType: HASH
+      - AttributeName:
+          Ref: pJokeElementName
+        KeyType: RANGE
       ProvisionedThroughput:
-        ReadCapacityUnits: !Ref pReadCapacityUnits
-        WriteCapacityUnits: !Ref pWriteCapacityUnits
+        ReadCapacityUnits:
+          Ref: pReadCapacityUnits
+        WriteCapacityUnits:
+          Ref: pWriteCapacityUnits
 
-  #Lambda
+  # Lambda
   rLambdaGetRandom:
-    Type: 'AWS::Lambda::Function'
+    Type: AWS::Lambda::Function
     DependsOn: rLambdaExecutionRole
     Properties:
       FunctionName: DadJokesGetRandom
       Architectures:
-        - 'arm64'
-      Description: 'Retrieves a random dad joke from DynamoDB. Returns a JSON object.'
-      Role: !GetAtt rLambdaExecutionRole.Arn
+      - arm64
+      Description: Retrieves a random dad joke from DynamoDB. Returns a JSON object.
+      Role:
+        Fn::GetAtt:
+        - rLambdaExecutionRole
+        - Arn
       Runtime: nodejs18.x
       Handler: index.handler
       Code:
-        ZipFile: './lambda/random.js'
+        ZipFile: ./lambda/random.js
   rLambdaExecutionRole:
-    Type: 'AWS::IAM::Role'
+    Type: AWS::IAM::Role
     Properties:
       RoleName: LambdaExecutionRole
-      Description: 'The role used by Lambda to log to cloudwatch.'
+      Description: The role used by Lambda to log to cloudwatch.
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
-          - Effect: 'Allow'
-            Principal:
-              Service:
-                - 'lambda.amazonaws.com'
-            Action:
-              - 'sts:AssumeRole'
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
   rLambdaExecutionPolicy:
-    Type: 'AWS::IAM::Policy'
+    Type: AWS::IAM::Policy
     Properties:
       PolicyName: LambdaExecutionPolicy
       Roles:
-        - !Ref rLambdaExecutionRole
+      - Ref: rLambdaExecutionRole
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
-          - Effect: Allow
-            Action:
-              - 'Logs:CreateLogGroup'
-            Resource:
-              - 'arn:aws:logs:ap-southeast-2:723104728616:*'
-          - Effect: Allow
-            Action:
-              - 'logs:CreateLogStream'
-              - 'logs:PutLogEvents'
-            Resource:
-              - 'arn:aws:logs:ap-southeast-2:723104728616:log-group:/aws/lambda/DadJokesGetRandom:*'
+        - Effect: Allow
+          Action:
+          - Logs:CreateLogGroup
+          Resource:
+          - arn:aws:logs:ap-southeast-2:723104728616:*
+        - Effect: Allow
+          Action:
+          - logs:CreateLogStream
+          - logs:PutLogEvents
+          Resource:
+          - arn:aws:logs:ap-southeast-2:723104728616:log-group:/aws/lambda/DadJokesGetRandom:*
 
-  #API Gateway
+  # Api Gateway
   rApiGatewayRole:
-    Type: 'AWS::IAM::Role'
+    Type: AWS::IAM::Role
     Properties:
       RoleName: ApiGatewayLambdaCallRole
-      Description: 'The role used by API Gateway to handle calls to Lambda functions'
+      Description: The role used by API Gateway to handle calls to Lambda functions
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
-          - Effect: 'Allow'
-            Principal:
-              Service:
-                - 'apigateway.amazonaws.com'
-            Action:
-              - 'sts:AssumeRole'
+        - Effect: Allow
+          Principal:
+            Service:
+            - apigateway.amazonaws.com
+          Action:
+          - sts:AssumeRole
   rApiGatewayPolicy:
-    Type: 'AWS::IAM::Policy'
+    Type: AWS::IAM::Policy
     Properties:
       PolicyName: ApiGatewayLambdaCallPolicy
       Roles:
-        - !Ref rApiGatewayRole
+      - Ref: rApiGatewayRole
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
-          - Effect: Allow
-            Action:
-              - 'lambda:InvokeFunction'
-              - 'lambda:InvokeAsync'
-              - 'lambda:GetFunction'
-            Resource:
-              - !GetAtt rLambdaGetRandom.Arn
+        - Effect: Allow
+          Action:
+          - lambda:InvokeFunction
+          - lambda:InvokeAsync
+          - lambda:GetFunction
+          Resource:
+          - Fn::GetAtt:
+            - rLambdaGetRandom
+            - Arn
   rApiGateway:
-    Type: 'AWS::ApiGatewayV2::Api'
+    Type: AWS::ApiGatewayV2::Api
     DependsOn:
-      - rApiGatewayRole
+    - rApiGatewayRole
     Properties:
       Body:
-        openapi: "3.0.1"
+        openapi: 3.0.1
         info:
-          title: "DadJokesHTTPApi"
-          version: "2023-05-12 07:50:42UTC"
-          description: 'The api gateway that handles calls for the Dad Jokes REST API.'
+          title: DadJokesHTTPApi
+          version: 2023-05-12 07:50:42UTC
+          description: The HTTP api gateway that handles calls for the Dad Jokes API.
         servers:
-        - url: "https://u8wzt58en6.execute-api.ap-southeast-2.amazonaws.com/{basePath}"
+        - url: https://u8wzt58en6.execute-api.ap-southeast-2.amazonaws.com/{basePath}
           variables:
             basePath:
-              default: "test"
+              default: dev
         paths:
-          /random:
+          /jokes/random:
             get:
               responses:
                 default:
-                  description: "Default response for GET /random"
+                  description: Default response for GET /random
               x-amazon-apigateway-integration:
-                payloadFormatVersion: "2.0"
-                type: "aws_proxy"
-                httpMethod: "POST"
-                uri: "arn:aws:apigateway:ap-southeast-2:lambda:path/2015-03-31/functions/arn:aws:lambda:ap-southeast-2:723104728616:function:DadJokesGetRandom/invocations"
-                connectionType: "INTERNET"
-        x-amazon-apigateway-importexport-version: "1.0"
+                payloadFormatVersion: '2.0'
+                type: aws_proxy
+                httpMethod: POST
+                uri: arn:aws:apigateway:ap-southeast-2:lambda:path/2015-03-31/functions/arn:aws:lambda:ap-southeast-2:723104728616:function:DadJokesGetRandom/invocations
+                connectionType: INTERNET
+        x-amazon-apigateway-importexport-version: '1.0'
+  rApiGatewayStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId:
+        Ref: rApiGateway
+      StageName: dev
+  rApiGatewayStageDeploy:
+    Type: AWS::ApiGatewayV2::Deployment
+    DependsOn: rApiGatewayStage
+    Properties:
+      ApiId:
+        Ref: rApiGateway
+      Description: The default deployment stage for DadJokesHTTPApi.
+      StageName: dev
 Outputs:
   ODynamoDBTable:
-    Value: !Ref rDynamoDBTable
+    Value:
+      Ref: rDynamoDBTable
     Description: Newly created Dad Jokes DynamoDB table.
