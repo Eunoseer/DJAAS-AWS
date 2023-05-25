@@ -30,30 +30,21 @@ Parameters:
     MaxLength: '1'
     AllowedPattern: '[S|N]'
     Description: HashType PrimaryKey Type
-    Default: S
+    Default: N
     ConstraintDescription: must be either S or N
-  pDynamoDBJokeName:
-    Type: String
-    MaxLength: '2048'
-    Description: Name
-    Default: JokeText
-  pDynamoDBJokeType:
-    Type: String
-    Description: Type
-    Default: S
   pReadCapacityUnits:
     Type: Number
     MinValue: '1'
     MaxValue: '100'
     Description: Provisioned read throughput
-    Default: '1'
+    Default: '5'
     ConstraintDescription: must be between 1 and 100
   pWriteCapacityUnits:
     Type: Number
     MinValue: '1'
     MaxValue: '100'
     Description: Provisioned write throughput
-    Default: '1'
+    Default: '5'
     ConstraintDescription: must be between 1 and 100
 
   # Lambda
@@ -111,13 +102,9 @@ Resources:
       AttributeDefinitions:
       - AttributeName: !Ref pDynamoDBPKName
         AttributeType: !Ref pDynamoDBPKType
-      - AttributeName: !Ref pDynamoDBJokeName
-        AttributeType: !Ref pDynamoDBJokeType
       KeySchema:
       - AttributeName: !Ref pDynamoDBPKName
         KeyType: HASH
-      - AttributeName: !Ref pDynamoDBJokeName
-        KeyType: RANGE
       ProvisionedThroughput:
         ReadCapacityUnits: !Ref pReadCapacityUnits
         WriteCapacityUnits: !Ref pWriteCapacityUnits
@@ -156,6 +143,10 @@ Resources:
           - logs:CreateLogStream
           - logs:PutLogEvents
           Resource: !Join ['',['arn:', !Ref AWS::Partition, ':logs:', !Ref AWS::Region, ':', !Ref AWS::AccountId, ':log-group:/aws/lambda/', !Ref pLambdaFunctionNameRandom, ':*']]
+        - Effect: Allow
+          Action:
+            - dynamodb:GetItem
+          Resource: !Join  ['',['arn:', !Ref AWS::Partition, ':dynamodb:', !Ref AWS::Region, ':', !Ref AWS::AccountId, ':table/', !Ref pDynamoDBTableName]]
   rLambdaGetRandom:
     Type: AWS::Lambda::Function
     DependsOn: rLambdaExecutionRole
