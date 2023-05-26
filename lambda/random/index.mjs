@@ -29,7 +29,7 @@ export const handler = async (event) => {
   } catch (err) {
     // Note: This is not returning the err.message as this could be a potential security flaw.
     statusCode = 500;
-    body = err.message;
+    body = "An internal server error occurred.";
   } finally {
     body = JSON.stringify(body);
   }
