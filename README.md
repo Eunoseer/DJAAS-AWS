@@ -30,6 +30,12 @@ Run the deploy command for the packaged cloudformation template
 aws cloudformation deploy --template-file .\build\cfn-djaas-main.yaml --stack-name djaas-main --capabilities CAPABILITY_NAMED_IAM
 ~~~
 
+Load an initial set of data into the dynamoDB database
+
+~~~text
+node .\data\PopulateDynamoDB.js .\data\example.txt Dad_Jokes
+~~~
+
 Finally, local cleanup build artefacts.
 
 ~~~text
