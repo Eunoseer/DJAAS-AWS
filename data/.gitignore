@@ -1,1 +1,4 @@
 /node_modules
+
+# Ignore any further changes to the existing example.txt and any other new .txt files.
+*.txt

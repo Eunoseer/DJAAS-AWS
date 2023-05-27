@@ -19,7 +19,7 @@ const main = async () => {
     const filepath = args[0];
     const targetTable = args[1];
 
-    validateFileExtension(filepath);
+    validateFileExtension(filepath, "txt");
 
     const file = readFileSync(filepath, "utf-8");
 

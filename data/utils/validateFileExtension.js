@@ -1,8 +1,8 @@
 /**
- * Validates the filepath parameter received by the script, throwing an error if it is not the expected .txt.
+ * Validates the filepath parameter received by the script, throwing an error if it is not the expected extension.
  * @param {string} filepath
  */
-const validateFileExtension = (filepath) => {
+const validateFileExtension = (filepath, expectedExtension) => {
   const filePathParts = filepath.split(/\./);
   const extensionPeriodIndex = filePathParts.length - 1;
 
@@ -11,7 +11,7 @@ const validateFileExtension = (filepath) => {
     throw new Error("NoFileExtensionError");
   } else if (
     filePathParts.length >= 2 &&
-    filePathParts[extensionPeriodIndex] !== "txt"
+    filePathParts[extensionPeriodIndex] !== expectedExtension
   ) {
     //handle the case that an invalid extension is passed.
     throw new Error("InvalidFileExtensionError");
