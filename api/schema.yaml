@@ -8,10 +8,10 @@ paths:
     get:
       responses:
         default:
-          description: Default response for GET /random
+          description: Default response for GET /jokes/random
       x-amazon-apigateway-integration:
         payloadFormatVersion: '2.0'
-        type: aws_proxy
+        type: AWS_PROXY
         httpMethod: POST
         uri: arn:aws:apigateway:ap-southeast-2:lambda:path/2015-03-31/functions/arn:aws:lambda:ap-southeast-2:723104728616:function:Lambda-DynamoDB-DadJokes-GetRandom/invocations
         connectionType: INTERNET

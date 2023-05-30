@@ -36,7 +36,7 @@ Load an initial set of data into the dynamoDB database
 node .\data\PopulateDynamoDB.js .\data\example.txt Dad_Jokes
 ~~~
 
-Finally, local cleanup build artefacts.
+Finally, clean up local build artefacts.
 
 ~~~text
 #TODO
