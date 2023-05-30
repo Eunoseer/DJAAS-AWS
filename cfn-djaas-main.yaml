@@ -243,7 +243,9 @@ Resources:
       StageName: !Ref pApiGatewayDeploymentStageName
   rApiGatewayStageDeploy:
     Type: AWS::ApiGatewayV2::Deployment
-    DependsOn: rApiGatewayStage
+    DependsOn:
+    - rApiGatewayStage
+    - rLambdaGetRandom
     Properties:
       ApiId: !GetAtt rApiGateway.ApiId
       Description: The default deployment stage for DadJokesHTTPApi.
@@ -284,7 +286,7 @@ Resources:
             # AWS Managed "CachingDisabled" Cache Policy
             CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
             # AWS Managed "SimpleCORS" Response Headers Policy
-            ResponseHeadersPolicyId: 67f7725c-6f97-4210-82d7-5512b31e9d03
+            ResponseHeadersPolicyId: 60669652-455b-4ae9-85a4-c4c02393f86c
             AllowedMethods:
               - GET
               - HEAD
