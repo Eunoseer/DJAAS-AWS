@@ -180,6 +180,7 @@ Resources:
         - Effect: Allow
           Action:
             - dynamodb:GetItem
+            - dynamodb:DescribeTable
           Resource: !Join  ['',['arn:', !Ref AWS::Partition, ':dynamodb:', !Ref AWS::Region, ':', !Ref AWS::AccountId, ':table/', !Ref pDynamoDBTableName]]
   rLambdaGetRandom:
     Type: AWS::Lambda::Function

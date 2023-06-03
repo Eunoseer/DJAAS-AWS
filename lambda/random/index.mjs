@@ -1,6 +1,6 @@
 "use strict";
 
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBClient, DescribeTableCommand } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, GetCommand } from "@aws-sdk/lib-dynamodb";
 
 const dynamoDBTableName = process.env.DYNAMO_TABLE_NAME;
@@ -14,10 +14,8 @@ export const handler = async (event) => {
     "Content-Type": "application/json",
   };
 
-  // TODO perform a count operation on the table to determine the maximum number to use for random generation dynamically.
-  const dynamoDBJokeCount = 10;
-
-  const randInt = generateRandomIntBelowMax(dynamoDBJokeCount);
+  const dynamoDBJokeCount = await getDynamoDBTableSize(dynamoDBTableName);
+  const randInt = await generateRandomIntBelowMax(dynamoDBJokeCount);
 
   try {
     body = await dynamo.send(
@@ -43,7 +41,13 @@ export const handler = async (event) => {
   };
 };
 
-// TODO move this into an application layer as it might be useful for other lambdas down the track.
+// TODO move these into an application layer as it might be useful for other lambdas down the track.
 const generateRandomIntBelowMax = (max, min = 1) => {
   return Math.round(Math.random() * (max - min) + min);
+};
+
+const getDynamoDBTableSize = async (tableName) => {
+  const command = new DescribeTableCommand({ TableName: tableName });
+  const response = await client.send(command);
+  return response.Table.ItemCount;
 };
